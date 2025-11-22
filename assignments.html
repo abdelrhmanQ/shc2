@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assignments</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <a href="index.html" class="brand-link">SHC</a>
+            </div>
+            <ul class="nav-menu" id="nav-menu">
+                <li class="nav-item">
+                    <a href="assignments.html" class="nav-link">Assignments</a>
+                </li>
+                <li class="nav-item">
+                    <a href="absence.html" class="nav-link">Attendance</a>
+                </li>
+                <li class="nav-item">
+                    <a href="payment.html" class="nav-link">Payment</a>
+                </li>
+                <li class="nav-item">
+                    <a href="news.html" class="nav-link">News</a>
+                </li>
+                <li class="nav-item" id="auth-nav-item">
+                    <a href="login.html" class="nav-link" id="login-nav-link">Login</a>
+                    <div class="user-menu" id="user-menu" style="display: none;">
+                        <a href="profile.html" class="user-menu-item">Profile</a>
+                        <a href="admin.html" class="user-menu-item" id="admin-link" style="display: none;">Admin</a>
+                        <button id="logout-btn" class="user-menu-item">Logout</button>
+                    </div>
+                </li>
+            </ul>
+            <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+                <svg class="theme-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path class="sun-icon" d="M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10z"/>
+                    <path class="moon-icon" d="M12 3v1m0 16v1m-8-9H3m4.3-6.3l-.7-.7m12.8 12.8l-.7-.7m-12.8 0l.7-.7m12.8-12.8l.7-.7"/>
+                </svg>
+            </button>
+            <button class="hamburger" id="hamburger" aria-label="Toggle menu" aria-expanded="false">
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+            </button>
+        </div>
+    </nav>
+
+    <main class="main-content" style="padding-top: 8rem;">
+        <div class="content-wrapper">
+            <div class="page-header">
+                <h1>Assignments</h1>
+                <p>View and submit your course assignments</p>
+            </div>
+
+            <div class="controls-section">
+                <div class="search-section">
+                    <input type="text" id="search-input" placeholder="Search assignments..." class="search-input">
+                    <button id="search-btn" class="search-btn">Search</button>
+                </div>
+                <div class="filter-section">
+                    <select id="filter-select" class="filter-select">
+                        <option value="all">All Assignments</option>
+                        <option value="upcoming">Upcoming</option>
+                        <option value="overdue">Overdue</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="assignments-container" id="assignments-container">
+                <!-- Assignments will be loaded here -->
+            </div>
+
+            <div class="loading-spinner" id="loading-spinner">
+                <div class="spinner"></div>
+                <p>Loading assignments...</p>
+            </div>
+        </div>
+    </main>
+
+    <script type="module" src="firebase.js"></script>
+    <script type="module" src="assignments.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

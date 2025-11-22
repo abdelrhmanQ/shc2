@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Gateway - SHC</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .payment-section {
+            background: var(--bg-primary);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .payment-history {
+            background: var(--bg-primary);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 2rem;
+        }
+        
+        .invoice-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .invoice-modal.active {
+            display: flex;
+        }
+        
+        .invoice-content {
+            background: var(--bg-primary);
+            border-radius: var(--border-radius);
+            width: 100%;
+            max-width: 500px;
+            box-shadow: var(--shadow-hover);
+            animation: modalFadeIn 0.3s ease;
+        }
+        
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        .invoice-header {
+            background: linear-gradient(135deg, var(--main-1) 0%, var(--second-1) 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: var(--border-radius) var(--border-radius) 0 0;
+            text-align: center;
+        }
+        
+        .invoice-header h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .invoice-body {
+            padding: 1.5rem;
+        }
+        
+        .invoice-details {
+            margin-bottom: 1.5rem;
+        }
+        
+        .invoice-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--bg-secondary);
+        }
+        
+        .invoice-row.total {
+            font-weight: bold;
+            font-size: 1.1rem;
+            border-bottom: none;
+            margin-top: 10px;
+            padding-top: 15px;
+            border-top: 2px solid var(--bg-secondary);
+        }
+        
+        .invoice-footer {
+            padding: 1rem 1.5rem;
+            background: var(--bg-secondary);
+            border-radius: 0 0 var(--border-radius) var(--border-radius);
+            text-align: center;
+        }
+        
+        .invoice-btn {
+            background: var(--main-1);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .invoice-btn:hover {
+            background: var(--second-1);
+            transform: translateY(-1px);
+        }
+        
+        .method-tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--bg-secondary);
+        }
+        
+        .method-tab {
+            padding: 1rem 2rem;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition);
+            border-bottom: 2px solid transparent;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .method-tab i {
+            font-size: 1.5rem;
+        }
+        
+        .method-tab.active {
+            color: var(--main-1);
+            border-bottom-color: var(--main-1);
+        }
+        
+        .method-tab:hover {
+            color: var(--second-1);
+        }
+        
+        .payment-form {
+            display: none;
+        }
+        
+        .payment-form.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .code-display {
+            background: var(--bg-secondary);
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            text-align: center;
+            margin-top: 2rem;
+        }
+        
+        .code-number {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--main-1);
+            margin: 1rem 0;
+            letter-spacing: 2px;
+        }
+        
+        .code-expiry {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+        
+        .code-instruction {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        .payment-instructions {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .payment-instructions h4 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+        
+        .payment-instructions p {
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+        
+        @media (max-width: 768px) {
+            .method-tabs {
+                flex-direction: column;
+            }
+            
+            .method-tab {
+                border-bottom: 1px solid var(--bg-secondary);
+                border-left: 2px solid transparent;
+            }
+            
+            .method-tab.active {
+                border-left-color: var(--main-1);
+                border-bottom-color: var(--bg-secondary);
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <a href="index.html" class="brand-link">SHC</a>
+            </div>
+            <ul class="nav-menu" id="nav-menu">
+                <li class="nav-item">
+                    <a href="assignments.html" class="nav-link">Assignments</a>
+                </li>
+                <li class="nav-item">
+                    <a href="absence.html" class="nav-link">Attendance</a>
+                </li>
+                <li class="nav-item">
+                    <a href="payment.html" class="nav-link">Payment</a>
+                </li>
+                <li class="nav-item">
+                    <a href="news.html" class="nav-link">News</a>
+                </li>
+                <li class="nav-item" id="auth-nav-item">
+                    <a href="login.html" class="nav-link" id="login-nav-link">Login</a>
+                    <div class="user-menu" id="user-menu" style="display: none;">
+                        <a href="profile.html" class="user-menu-item">Profile</a>
+                        <a href="admin.html" class="user-menu-item" id="admin-link" style="display: none;">Admin</a>
+                        <button id="logout-btn" class="user-menu-item">Logout</button>
+                    </div>
+                </li>
+            </ul>
+            <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+                <svg class="theme-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path class="sun-icon" d="M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10z"/>
+                    <path class="moon-icon" d="M12 3v1m0 16v1m-8-9H3m4.3-6.3l-.7-.7m12.8 12.8l-.7-.7m-12.8 0l.7-.7m12.8-12.8l.7-.7"/>
+                </svg>
+            </button>
+            <button class="hamburger" id="hamburger" aria-label="Toggle menu" aria-expanded="false">
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+            </button>
+        </div>
+    </nav>
+
+    <div id="notification-area"></div>
+
+    <div class="invoice-modal" id="invoice-modal">
+        <div class="invoice-content">
+            <div class="invoice-header">
+                <h3>Payment Successful!</h3>
+                <p>Thank you for using our services</p>
+            </div>
+            <div class="invoice-body">
+                <div class="invoice-details">
+                    <div class="invoice-row">
+                        <span>Transaction ID:</span>
+                        <span id="invoice-transaction">TXN_123456789</span>
+                    </div>
+                    <div class="invoice-row">
+                        <span>Payment Method:</span>
+                        <span id="invoice-method">Visa</span>
+                    </div>
+                    <div class="invoice-row">
+                        <span>Amount:</span>
+                        <span id="invoice-amount">1000 EGP</span>
+                    </div>
+                    <div class="invoice-row">
+                        <span>Date & Time:</span>
+                        <span id="invoice-date">January 1, 2023 - 10:30 AM</span>
+                    </div>
+                    <div class="invoice-row total">
+                        <span>Total:</span>
+                        <span id="invoice-total">1000 EGP</span>
+                    </div>
+                </div>
+            </div>
+            <div class="invoice-footer">
+                <button class="invoice-btn" id="close-invoice">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <main class="main-content" style="padding-top: 8rem;">
+        <div class="content-wrapper">
+            <div class="page-header">
+                <h1>Payment Gateway</h1>
+                <p>Choose your preferred payment method</p>
+            </div>
+
+            <section class="payment-section">
+                <h2 class="section-title">Available Payment Methods</h2>
+                
+                <div class="method-tabs">
+                    <button class="method-tab active" data-method="visa">
+                        <i class="fab fa-cc-visa"></i>
+                        <span>Visa / Mastercard</span>
+                    </button>
+                    <button class="method-tab" data-method="fawry">
+                        <i class="fas fa-money-bill-wave"></i>
+                        <span>Fawry</span>
+                    </button>
+                    <button class="method-tab" data-method="wallet">
+                        <i class="fas fa-wallet"></i>
+                        <span>E-Wallet</span>
+                    </button>
+                </div>
+
+                <div id="visa-form" class="payment-form active">
+                    <form id="visa-payment-form" class="payment-details-form">
+                        <div class="form-group">
+                            <label for="card-number">Card Number</label>
+                            <input type="text" id="card-number" placeholder="1234 5678 9012 3456" maxlength="19" class="form-input">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="expiry-date">Expiry Date</label>
+                                <input type="text" id="expiry-date" placeholder="MM/YY" maxlength="5" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label for="cvv">CVV</label>
+                                <input type="text" id="cvv" placeholder="123" maxlength="3" class="form-input">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="cardholder-name">Cardholder Name</label>
+                            <input type="text" id="cardholder-name" placeholder="John Doe" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label for="payment-amount">Amount (Egyptian Pound)</label>
+                            <input type="number" id="payment-amount" placeholder="1000" min="1" class="form-input" required>
+                        </div>
+                        <button type="submit" class="submit-btn">Pay Now</button>
+                    </form>
+                </div>
+
+                <div id="fawry-form" class="payment-form">
+                    <div class="payment-instructions">
+                        <h4>Payment via Fawry</h4>
+                        <p>Generate a payment code to use at any Fawry machine</p>
+                        <div class="form-group">
+                            <label for="fawry-amount">Amount (Egyptian Pound)</label>
+                            <input type="number" id="fawry-amount" placeholder="1000" min="1" class="form-input" required>
+                        </div>
+                        <button id="generate-fawry-btn" class="submit-btn">Generate Fawry Code</button>
+                    </div>
+                    <div id="fawry-code-display" class="code-display" style="display: none;">
+                        <h4>Your Fawry Code</h4>
+                        <div class="code-number" id="fawry-code-number"></div>
+                        <p class="code-expiry">Expires in: <span id="fawry-expiry-timer">30:00</span></p>
+                        <p class="code-instruction">Take this code to any Fawry machine to complete payment</p>
+                    </div>
+                </div>
+
+                <div id="wallet-form" class="payment-form">
+                    <div class="payment-instructions">
+                        <h4>Payment via E-Wallet</h4>
+                        <p>Generate a payment code for transfer via E-Wallet</p>
+                        <div class="form-group">
+                            <label for="wallet-amount">Amount (Egyptian Pound)</label>
+                            <input type="number" id="wallet-amount" placeholder="1000" min="1" class="form-input" required>
+                        </div>
+                        <button id="generate-wallet-btn" class="submit-btn">Generate Wallet Code</button>
+                    </div>
+                    <div id="wallet-code-display" class="code-display" style="display: none;">
+                        <h4>Your Wallet Code</h4>
+                        <div class="code-number" id="wallet-code-number"></div>
+                        <p class="code-expiry">Expires in: <span id="wallet-expiry-timer">30:00</span></p>
+                        <p class="code-instruction">Use this code in your E-Wallet app to complete payment</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="payment-history">
+                <h2 class="section-title">Payment History</h2>
+                <div id="payments-container" class="payments-container">
+                    <div class="payment-record">
+                        <div class="payment-header">
+                            <strong>Visa - EGP 1000</strong>
+                            <span class="payment-status status-paid">Paid</span>
+                        </div>
+                        <div class="payment-details">
+                            <div class="payment-code">TXN: TXN_ABC123456</div>
+                            <span class="payment-date">January 1, 2023 - 10:30 AM</span>
+                        </div>
+                    </div>
+                    <div class="payment-record">
+                        <div class="payment-header">
+                            <strong>Fawry - EGP 1500</strong>
+                            <span class="payment-status status-pending">Pending</span>
+                        </div>
+                        <div class="payment-details">
+                            <div class="payment-code">Code: 123456789</div>
+                            <span class="payment-date">January 2, 2023 - 02:15 PM</span>
+                        </div>
+                    </div>
+                    <div class="payment-record">
+                        <div class="payment-header">
+                            <strong>E-Wallet - EGP 800</strong>
+                            <span class="payment-status status-awaiting_payment">Awaiting Payment</span>
+                        </div>
+                        <div class="payment-details">
+                            <div class="payment-code">Code: 987654321</div>
+                            <span class="payment-date">January 3, 2023 - 09:45 AM</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script type="module" src="firebase.js"></script>
+    <script type="module" src="payment.js"></script>
+    <script>
+        class PaymentManager {
+            constructor() {
+                this.methodTabs = document.querySelectorAll('.method-tab');
+                this.paymentForms = document.querySelectorAll('.payment-form');
+                this.paymentsContainer = document.getElementById('payments-container');
+                this.notificationArea = document.getElementById('notification-area');
+                this.invoiceModal = document.getElementById('invoice-modal');
+                
+                this.activeTimers = {};
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+            }
+
+            setupEventListeners() {
+                this.methodTabs.forEach(tab => {
+                    tab.addEventListener('click', () => this.switchPaymentMethod(tab.dataset.method));
+                });
+
+                document.getElementById('visa-payment-form').addEventListener('submit', (e) => this.processVisaPayment(e));
+                
+                document.getElementById('card-number').addEventListener('input', (e) => this.formatCardNumber(e));
+                document.getElementById('expiry-date').addEventListener('input', (e) => this.formatExpiryDate(e));
+                
+                document.getElementById('generate-fawry-btn').addEventListener('click', () => this.generateFawryCode());
+                document.getElementById('generate-wallet-btn').addEventListener('click', () => this.generateWalletCode());
+                
+                document.getElementById('close-invoice').addEventListener('click', () => this.closeInvoice());
+            }
+
+            switchPaymentMethod(method) {
+                this.methodTabs.forEach(tab => {
+                    tab.classList.toggle('active', tab.dataset.method === method);
+                });
+
+                this.paymentForms.forEach(form => {
+                    form.classList.toggle('active', form.id === `${method}-form`);
+                });
+            }
+
+            formatCardNumber(e) {
+                let value = e.target.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+                let matches = value.match(/\d{4,16}/g);
+                let match = matches && matches[0] || '';
+                let parts = [];
+                
+                for (let i = 0, len = match.length; i < len; i += 4) {
+                    parts.push(match.substring(i, i + 4));
+                }
+                
+                if (parts.length) {
+                    e.target.value = parts.join(' ');
+                } else {
+                    e.target.value = value;
+                }
+            }
+
+            formatExpiryDate(e) {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length >= 2) {
+                    value = value.substring(0, 2) + '/' + value.substring(2, 4);
+                }
+                e.target.value = value;
+            }
+
+            luhnCheck(cardNumber) {
+                const cleaned = cardNumber.replace(/\s+/g, '');
+                let sum = 0;
+                let isEven = false;
+
+                for (let i = cleaned.length - 1; i >= 0; i--) {
+                    let digit = parseInt(cleaned.charAt(i), 10);
+
+                    if (isEven) {
+                        digit *= 2;
+                        if (digit > 9) {
+                            digit -= 9;
+                        }
+                    }
+
+                    sum += digit;
+                    isEven = !isEven;
+                }
+
+                return sum % 10 === 0;
+            }
+
+            async processVisaPayment(e) {
+                e.preventDefault();
+                
+                const cardNumber = document.getElementById('card-number').value.replace(/\s+/g, '');
+                const expiryDate = document.getElementById('expiry-date').value;
+                const cvv = document.getElementById('cvv').value;
+                const cardholderName = document.getElementById('cardholder-name').value;
+                const amount = parseFloat(document.getElementById('payment-amount').value);
+
+                if (!this.luhnCheck(cardNumber)) {
+                    this.showNotification('Invalid card number', 'error');
+                    return;
+                }
+
+                if (!/^\d{3,4}$/.test(cvv)) {
+                    this.showNotification('Invalid CVV', 'error');
+                    return;
+                }
+
+                if (!/^\d{2}\/\d{2}$/.test(expiryDate)) {
+                    this.showNotification('Invalid expiry date format (MM/YY)', 'error');
+                    return;
+                }
+
+                if (!amount || amount <= 0) {
+                    this.showNotification('Please enter a valid amount', 'error');
+                    return;
+                }
+
+                this.showNotification('Processing payment...', 'info');
+
+                setTimeout(() => {
+                    const transactionId = 'TXN_' + Math.random().toString(36).substr(2, 9).toUpperCase();
+                    
+                    this.showNotification('Payment successful!', 'success');
+                    this.showInvoice(transactionId, 'Visa', amount);
+                    
+                    this.addPaymentToHistory('visa', amount, 'paid', transactionId);
+                    
+                    document.getElementById('visa-payment-form').reset();
+                }, 2000);
+            }
+
+            async generateFawryCode() {
+                await this.generatePaymentCode('fawry');
+            }
+
+            async generateWalletCode() {
+                await this.generatePaymentCode('wallet');
+            }
+
+            async generatePaymentCode(method) {
+                const amountInput = document.getElementById(`${method}-amount`);
+                const amount = parseFloat(amountInput.value);
+
+                if (!amount || amount <= 0) {
+                    this.showNotification('Please enter a valid amount', 'error');
+                    return;
+                }
+
+                try {
+                    const code9 = this.generate9DigitCode();
+                    const expiresAt = new Date(Date.now() + 30 * 60000);
+                    
+                    this.displayPaymentCode(method, code9, expiresAt);
+                    this.showNotification(`${method === 'fawry' ? 'Fawry' : 'Wallet'} code generated successfully!`, 'success');
+                    
+                    this.addPaymentToHistory(
+                        method, 
+                        amount, 
+                        'awaiting_payment',
+                        code9
+                    );
+
+                    amountInput.value = '';
+
+                } catch (error) {
+                    console.error('Error generating code:', error);
+                    this.showNotification('Failed to generate code', 'error');
+                }
+            }
+
+            generate9DigitCode() {
+                return Math.floor(100000000 + Math.random() * 900000000).toString();
+            }
+
+            displayPaymentCode(method, code, expiresAt) {
+                const displayElement = document.getElementById(`${method}-code-display`);
+                const codeElement = document.getElementById(`${method}-code-number`);
+                const timerElement = document.getElementById(`${method}-expiry-timer`);
+
+                displayElement.style.display = 'block';
+                codeElement.textContent = code;
+                
+                this.startCountdownTimer(expiresAt, timerElement, method);
+            }
+
+            startCountdownTimer(expiresAt, timerElement, method) {
+                const updateTimer = () => {
+                    const now = new Date();
+                    const timeLeft = expiresAt - now;
+                    
+                    if (timeLeft <= 0) {
+                        timerElement.textContent = 'Expired';
+                        clearInterval(this.activeTimers[method]);
+                        return;
+                    }
+                    
+                    const minutes = Math.floor(timeLeft / 60000);
+                    const seconds = Math.floor((timeLeft % 60000) / 1000);
+                    timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                };
+
+                updateTimer();
+                this.activeTimers[method] = setInterval(updateTimer, 1000);
+            }
+
+            addPaymentToHistory(method, amount, status, reference) {
+                const paymentElement = document.createElement('div');
+                paymentElement.className = 'payment-record';
+                
+                const now = new Date();
+                const formattedDate = now.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                const methodNames = {
+                    'visa': 'Visa',
+                    'fawry': 'Fawry',
+                    'wallet': 'E-Wallet'
+                };
+                
+                const statusNames = {
+                    'paid': 'Paid',
+                    'pending': 'Pending',
+                    'awaiting_payment': 'Awaiting Payment'
+                };
+                
+                let codeDisplay = '';
+                if (reference) {
+                    if (method === 'visa') {
+                        codeDisplay = `<div class="payment-code">TXN: ${reference}</div>`;
+                    } else {
+                        codeDisplay = `<div class="payment-code">Code: ${reference}</div>`;
+                    }
+                }
+                
+                paymentElement.innerHTML = `
+                    <div class="payment-header">
+                        <strong>${methodNames[method]} - EGP ${amount}</strong>
+                        <span class="payment-status status-${status}">${statusNames[status]}</span>
+                    </div>
+                    <div class="payment-details">
+                        ${codeDisplay}
+                        <span class="payment-date">${formattedDate}</span>
+                    </div>
+                `;
+                
+                this.paymentsContainer.prepend(paymentElement);
+            }
+
+            showInvoice(transactionId, method, amount) {
+                const now = new Date();
+                const formattedDate = now.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                document.getElementById('invoice-transaction').textContent = transactionId;
+                document.getElementById('invoice-method').textContent = method;
+                document.getElementById('invoice-amount').textContent = `${amount} EGP`;
+                document.getElementById('invoice-date').textContent = formattedDate;
+                document.getElementById('invoice-total').textContent = `${amount} EGP`;
+                
+                this.invoiceModal.classList.add('active');
+            }
+
+            closeInvoice() {
+                this.invoiceModal.classList.remove('active');
+            }
+
+            showNotification(message, type) {
+                const notification = document.createElement('div');
+                notification.className = `notification ${type}`;
+                notification.textContent = message;
+                
+                this.notificationArea.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.classList.add('show');
+                }, 100);
+                
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.parentNode.removeChild(notification);
+                        }
+                    }, 300);
+                }, 5000);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            new PaymentManager();
+        });
+    </script>
+    <script src="script.js"></script>
+</body>
+</html>
